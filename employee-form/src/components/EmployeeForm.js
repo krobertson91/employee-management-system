@@ -1,5 +1,4 @@
 import React from 'react';
-// If you created the CSS file, keep this import. If not, you can delete it.
 import './EmployeeForm.css';
 
 class EmployeeForm extends React.Component {
@@ -15,7 +14,19 @@ class EmployeeForm extends React.Component {
 
     handleSubmit = (e) => {
         e.preventDefault();
-        console.log(this.state);
+
+        // Create an employee object from current state
+        const newEmployee = {
+            name: this.state.name,
+            email: this.state.email,
+            title: this.state.title,
+            department: this.state.department
+        };
+
+        // ✅ Call the addEmployee function from App.js
+        this.props.addEmployee(newEmployee);
+
+        // Reset the form after submission
         this.setState({ name: '', email: '', title: '', department: '' });
     };
 
