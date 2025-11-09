@@ -1,42 +1,38 @@
 import React, { useState, useEffect } from "react";
+import { BrowserRouter, Routes, Route, Link } from "react-router-dom";
 import EmployeeForm from "./components/EmployeeForm";
+import EmployeeList from "./components/EmployeeList";
+import EmployeeDetail from "./components/EmployeeDetail";
 
 const STORAGE_KEY = "employees";
 
 export default function App() {
-    const [employees, setEmployees] = useState([]);
-
-    // Load once on mount
-    useEffect(() => {
-        const saved = localStorage.getItem(STORAGE_KEY);
-        if (!saved) return;
+    // Load BEFORE first render to avoid overwriting storage with []
+    const [employees, setEmployees] = useState(() => {
         try {
-            const parsed = JSON.parse(saved);
-            if (Array.isArray(parsed)) setEmployees(parsed);
+            const saved = localStorage.getItem(STORAGE_KEY);
+            return saved ? JSON.parse(saved) : [];
         } catch {
-            // corrupted/unexpected data -> start fresh
-            setEmployees([]);
+            return [];
         }
-    }, []);
+    });
 
-    // Persist on every change
+    // Persist on any change
     useEffect(() => {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(employees));
     }, [employees]);
 
-    // Add with simple validation + de-dupe by EmployeeId
+    // Add employee (ensure an id and basic cleanup)
     function addEmployee(newEmployee) {
         const clean = {
             ...newEmployee,
-            // ensure an id exists if the form didn’t provide one
             EmployeeId:
                 newEmployee.EmployeeId != null
                     ? String(newEmployee.EmployeeId)
                     : String(Date.now()),
             name: String(newEmployee.name || "").trim(),
         };
-
-        if (!clean.name) return; // ignore empty names
+        if (!clean.name) return;
 
         setEmployees((prev) => {
             const exists = prev.some(
@@ -46,51 +42,41 @@ export default function App() {
         });
     }
 
-    // Optional manual save button (not required because of useEffect)
-    function saveData() {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(employees));
-    }
-
-    function clearAllEmployees() {
-        setEmployees([]);
-        localStorage.removeItem(STORAGE_KEY);
+    // Delete by id
+    function removeEmployee(id) {
+        setEmployees((prev) =>
+            prev.filter((e) => String(e.EmployeeId) !== String(id))
+        );
     }
 
     return (
-        <div className="App">
-            <h1>New Employee</h1>
+        <BrowserRouter>
+            {/* simple global header */}
+            <header style={{ marginBottom: "1rem" }}>
+                <Link to="/" style={{ textDecoration: "none", fontWeight: 600 }}>
+                    🏠 Home
+                </Link>
+            </header>
 
-            {/* EmployeeForm should call props.addEmployee(employeeObject) */}
-            <EmployeeForm addEmployee={addEmployee} />
-
-            <h2>Employee List</h2>
-            {employees.length === 0 ? (
-                <p>No employees added yet.</p>
-            ) : (
-                <ul>
-                    {employees.map((emp) => (
-                        <li key={emp.EmployeeId}>
-                            <strong>{emp.name}</strong>
-                            <br />
-                            ID: {emp.EmployeeId}
-                            <br />
-                            Email: {emp.email}
-                            <br />
-                            Title: {emp.title}
-                            <br />
-                            Department: {emp.department}
-                        </li>
-                    ))}
-                </ul>
-            )}
-
-            {/* Buttons (manual save is optional) */}
-            <button type="button" onClick={saveData}>
-                Save to Local Storage
-            </button>
-            <button type="button" onClick={clearAllEmployees}>
-                Clear All Employees
-            </button>
-        </div>
+            <Routes>
+                <Route
+                    path="/"
+                    element={
+                        <div className="App">
+                            <h1>New Employee</h1>
+                            <EmployeeForm addEmployee={addEmployee} />
+                            <h2>Employee List</h2>
+                            <EmployeeList employees={employees} onRemove={removeEmployee} />
+                        </div>
+                    }
+                />
+                <Route
+                    path="/employees/:id"
+                    element={
+                        <EmployeeDetail employees={employees} onRemove={removeEmployee} />
+                    }
+                />
+            </Routes>
+        </BrowserRouter>
     );
 }
