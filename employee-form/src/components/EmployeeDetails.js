@@ -1,13 +1,14 @@
 import React from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { useEmployees } from "../EmployeeContext";
+import { useSelector, useDispatch } from "react-redux";
 
 export default function EmployeeDetails() {
     const { id } = useParams();
     const navigate = useNavigate();
-    const { getEmployeeById, deleteEmployee } = useEmployees();
+    const dispatch = useDispatch();
 
-    const employee = getEmployeeById(id);
+    const employees = useSelector((state) => state.employees);
+    const employee = employees.find((emp) => emp.id === id);
 
     if (!employee) {
         return (
@@ -25,7 +26,8 @@ export default function EmployeeDetails() {
             `Are you sure you want to delete ${employee.name}?`
         );
         if (!confirmed) return;
-        deleteEmployee(employee.id);
+
+        dispatch({ type: "DELETE_EMPLOYEE", payload: employee.id });
         navigate("/");
     }
 
@@ -43,7 +45,7 @@ export default function EmployeeDetails() {
                     </p>
                 )}
 
-                {/* Add any other fields you currently have on the employee object here */}
+                {/* Add other fields if you have them */}
 
                 <div className="card-actions">
                     <Link className="btn" to={`/employees/${employee.id}/edit`}>

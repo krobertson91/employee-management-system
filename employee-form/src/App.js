@@ -7,21 +7,24 @@ import {
     useNavigate,
     useParams,
 } from "react-router-dom";
+import { useSelector, useDispatch } from "react-redux";
 
-import {EmployeeProvider, useEmployees} from "./EmployeeContext";
 import EmployeeList from "./components/EmployeeList";
 import EmployeeDetails from "./components/EmployeeDetails";
 import EmployeeForm from "./components/EmployeeForm";
 import "./App.css";
 
-
-// Page for adding a new employee
+// -------- Add Employee Page (uses Redux) ----------
 function AddEmployeePage() {
     const navigate = useNavigate();
-    const { addEmployee } = useEmployees();
+    const dispatch = useDispatch();
 
     function handleSubmit(formData) {
-        addEmployee(formData);
+        const newEmployee = {
+            id: Date.now().toString(),
+            ...formData,
+        };
+        dispatch({ type: "ADD_EMPLOYEE", payload: newEmployee });
         navigate("/");
     }
 
@@ -33,16 +36,23 @@ function AddEmployeePage() {
     );
 }
 
-// Page for editing an existing employee
+// -------- Edit Employee Page (uses Redux) ----------
 function EditEmployeePage() {
     const { id } = useParams();
     const navigate = useNavigate();
-    const { getEmployeeById, updateEmployee } = useEmployees();
+    const dispatch = useDispatch();
 
-    const employee = getEmployeeById(id);
+    const employees = useSelector((state) => state.employees);
+    const employee = employees.find((emp) => emp.id === id);
 
     function handleSubmit(formData) {
-        updateEmployee(id, formData);
+        dispatch({
+            type: "UPDATE_EMPLOYEE",
+            payload: {
+                id,
+                updates: formData,
+            },
+        });
         navigate(`/employees/${id}`);
     }
 
@@ -62,29 +72,28 @@ function EditEmployeePage() {
     );
 }
 
+// -------- Main App ----------
 export default function App() {
     return (
-        <EmployeeProvider>
-            <Router>
-                <div className="app">
-                    <header className="app-header">
-                        <h1>Employee Management System</h1>
-                        <nav>
-                            <Link to="/">Employees</Link>
-                            <Link to="/add">Add Employee</Link>
-                        </nav>
-                    </header>
+        <Router>
+            <div className="app">
+                <header className="app-header">
+                    <h1>Employee Management System</h1>
+                    <nav>
+                        <Link to="/">Employees</Link>
+                        <Link to="/add">Add Employee</Link>
+                    </nav>
+                </header>
 
-                    <main className="app-main">
-                        <Routes>
-                            <Route path="/" element={<EmployeeList />} />
-                            <Route path="/add" element={<AddEmployeePage />} />
-                            <Route path="/employees/:id" element={<EmployeeDetails />} />
-                            <Route path="/employees/:id/edit" element={<EditEmployeePage />} />
-                        </Routes>
-                    </main>
-                </div>
-            </Router>
-        </EmployeeProvider>
+                <main className="app-main">
+                    <Routes>
+                        <Route path="/" element={<EmployeeList />} />
+                        <Route path="/add" element={<AddEmployeePage />} />
+                        <Route path="/employees/:id" element={<EmployeeDetails />} />
+                        <Route path="/employees/:id/edit" element={<EditEmployeePage />} />
+                    </Routes>
+                </main>
+            </div>
+        </Router>
     );
 }

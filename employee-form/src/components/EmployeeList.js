@@ -1,13 +1,13 @@
 import React, { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { useEmployees } from "../EmployeeContext";
+import { useSelector } from "react-redux";
 
 export default function EmployeeList() {
-    const { employees } = useEmployees();
+    const employees = useSelector((state) => state.employees);
 
     const [search, setSearch] = useState("");
     const [departmentFilter, setDepartmentFilter] = useState("all");
-    const [sortBy, setSortBy] = useState("name"); // "name" or "department"
+    const [sortBy, setSortBy] = useState("name");
 
     const departments = useMemo(() => {
         const set = new Set();
