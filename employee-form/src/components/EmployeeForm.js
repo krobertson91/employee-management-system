@@ -1,60 +1,113 @@
-import React from "react";
-import "./EmployeeForm.css";
+import React, { useState, useEffect } from "react";
 
-class EmployeeForm extends React.Component {
-    constructor(props) {
-        super(props);
-        this.state = { name: "", email: "", title: "", department: "" };
+const EMPTY_EMPLOYEE = {
+    name: "",
+    department: "",
+    title: "",
+    email: "",
+};
+
+export default function EmployeeForm({ initialEmployee, onSubmit }) {
+    const [form, setForm] = useState(EMPTY_EMPLOYEE);
+    const [errors, setErrors] = useState({});
+
+    useEffect(() => {
+        if (initialEmployee) {
+            setForm({
+                name: initialEmployee.name || "",
+                department: initialEmployee.department || "",
+                title: initialEmployee.title || "",
+                email: initialEmployee.email || "",
+            });
+        }
+    }, [initialEmployee]);
+
+    function handleChange(e) {
+        const { name, value } = e.target;
+        setForm((prev) => ({ ...prev, [name]: value }));
     }
 
-    handleChange = (e) => {
-        const { name, value } = e.target;
-        this.setState({ [name]: value });
-    };
+    function validate() {
+        const newErrors = {};
 
-    handleSubmit = (e) => {
+        if (!form.name.trim()) {
+            newErrors.name = "Name is required.";
+        }
+        if (!form.department.trim()) {
+            newErrors.department = "Department is required.";
+        }
+        if (!form.email.trim()) {
+            newErrors.email = "Email is required.";
+        } else if (!/\S+@\S+\.\S+/.test(form.email)) {
+            newErrors.email = "Enter a valid email address.";
+        }
+
+        setErrors(newErrors);
+        return Object.keys(newErrors).length === 0;
+    }
+
+    function handleSubmit(e) {
         e.preventDefault();
-        const { name, email, title, department } = this.state;
+        if (!validate()) return;
+        onSubmit(form);
+    }
 
-        const newEmployee = {
-            name: name.trim(),
-            email: String(email).trim().toLowerCase(),
-            title: title.trim(),
-            department: department.trim(),
-        };
-
-        this.props.addEmployee(newEmployee);
-        this.setState({ name: "", email: "", title: "", department: "" });
-    };
-
-    render() {
-        const { name, email, title, department } = this.state;
-        return (
-            <form onSubmit={this.handleSubmit} className="employee-form">
+    return (
+        <form className="card form" onSubmit={handleSubmit} noValidate>
+            <div className="form-row">
                 <label>
                     Name
-                    <input type="text" name="name" value={name} onChange={this.handleChange} required />
+                    <input
+                        name="name"
+                        value={form.name}
+                        onChange={handleChange}
+                        type="text"
+                    />
                 </label>
+                {errors.name && <p className="error">{errors.name}</p>}
+            </div>
 
-                <label>
-                    Email
-                    <input type="email" name="email" value={email} onChange={this.handleChange} required />
-                </label>
-
-                <label>
-                    Job Title
-                    <input type="text" name="title" value={title} onChange={this.handleChange} required />
-                </label>
-
+            <div className="form-row">
                 <label>
                     Department
-                    <input type="text" name="department" value={department} onChange={this.handleChange} required />
+                    <input
+                        name="department"
+                        value={form.department}
+                        onChange={handleChange}
+                        type="text"
+                    />
                 </label>
+                {errors.department && <p className="error">{errors.department}</p>}
+            </div>
 
-                <button type="submit">Add Employee</button>
-            </form>
-        );
-    }
+            <div className="form-row">
+                <label>
+                    Title
+                    <input
+                        name="title"
+                        value={form.title}
+                        onChange={handleChange}
+                        type="text"
+                    />
+                </label>
+            </div>
+
+            <div className="form-row">
+                <label>
+                    Email
+                    <input
+                        name="email"
+                        value={form.email}
+                        onChange={handleChange}
+                        type="email"
+                    />
+                </label>
+                {errors.email && <p className="error">{errors.email}</p>}
+            </div>
+
+            <button className="btn primary" type="submit">
+                {initialEmployee ? "Save Changes" : "Add Employee"}
+            </button>
+        </form>
+    );
 }
-
-export default EmployeeForm;

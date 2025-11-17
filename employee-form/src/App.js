@@ -1,82 +1,90 @@
-import React, { useState, useEffect } from "react";
-import { BrowserRouter, Routes, Route, Link } from "react-router-dom";
-import EmployeeForm from "./components/EmployeeForm";
+import React from "react";
+import {
+    BrowserRouter as Router,
+    Routes,
+    Route,
+    Link,
+    useNavigate,
+    useParams,
+} from "react-router-dom";
+
+import {EmployeeProvider, useEmployees} from "./EmployeeContext";
 import EmployeeList from "./components/EmployeeList";
-import EmployeeDetail from "./components/EmployeeDetail";
+import EmployeeDetails from "./components/EmployeeDetails";
+import EmployeeForm from "./components/EmployeeForm";
+import "./App.css";
 
-const STORAGE_KEY = "employees";
 
-export default function App() {
-    // Load BEFORE first render to avoid overwriting storage with []
-    const [employees, setEmployees] = useState(() => {
-        try {
-            const saved = localStorage.getItem(STORAGE_KEY);
-            return saved ? JSON.parse(saved) : [];
-        } catch {
-            return [];
-        }
-    });
+// Page for adding a new employee
+function AddEmployeePage() {
+    const navigate = useNavigate();
+    const { addEmployee } = useEmployees();
 
-    // Persist on any change
-    useEffect(() => {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(employees));
-    }, [employees]);
-
-    // Add employee (ensure an id and basic cleanup)
-    function addEmployee(newEmployee) {
-        const clean = {
-            ...newEmployee,
-            EmployeeId:
-                newEmployee.EmployeeId != null
-                    ? String(newEmployee.EmployeeId)
-                    : String(Date.now()),
-            name: String(newEmployee.name || "").trim(),
-        };
-        if (!clean.name) return;
-
-        setEmployees((prev) => {
-            const exists = prev.some(
-                (e) => String(e.EmployeeId) === String(clean.EmployeeId)
-            );
-            return exists ? prev : [...prev, clean];
-        });
+    function handleSubmit(formData) {
+        addEmployee(formData);
+        navigate("/");
     }
 
-    // Delete by id
-    function removeEmployee(id) {
-        setEmployees((prev) =>
-            prev.filter((e) => String(e.EmployeeId) !== String(id))
+    return (
+        <div className="page">
+            <h2>Add Employee</h2>
+            <EmployeeForm onSubmit={handleSubmit} />
+        </div>
+    );
+}
+
+// Page for editing an existing employee
+function EditEmployeePage() {
+    const { id } = useParams();
+    const navigate = useNavigate();
+    const { getEmployeeById, updateEmployee } = useEmployees();
+
+    const employee = getEmployeeById(id);
+
+    function handleSubmit(formData) {
+        updateEmployee(id, formData);
+        navigate(`/employees/${id}`);
+    }
+
+    if (!employee) {
+        return (
+            <div className="page">
+                <p>Employee not found.</p>
+            </div>
         );
     }
 
     return (
-        <BrowserRouter>
-            {/* simple global header */}
-            <header style={{ marginBottom: "1rem" }}>
-                <Link to="/" style={{ textDecoration: "none", fontWeight: 600 }}>
-                    🏠 Home
-                </Link>
-            </header>
+        <div className="page">
+            <h2>Edit Employee</h2>
+            <EmployeeForm initialEmployee={employee} onSubmit={handleSubmit} />
+        </div>
+    );
+}
 
-            <Routes>
-                <Route
-                    path="/"
-                    element={
-                        <div className="App">
-                            <h1>New Employee</h1>
-                            <EmployeeForm addEmployee={addEmployee} />
-                            <h2>Employee List</h2>
-                            <EmployeeList employees={employees} onRemove={removeEmployee} />
-                        </div>
-                    }
-                />
-                <Route
-                    path="/employees/:id"
-                    element={
-                        <EmployeeDetail employees={employees} onRemove={removeEmployee} />
-                    }
-                />
-            </Routes>
-        </BrowserRouter>
+export default function App() {
+    return (
+        <EmployeeProvider>
+            <Router>
+                <div className="app">
+                    <header className="app-header">
+                        <h1>Employee Management System</h1>
+                        <nav>
+                            <Link to="/">Employees</Link>
+                            <Link to="/add">Add Employee</Link>
+                        </nav>
+                    </header>
+
+                    <main className="app-main">
+                        <Routes>
+                            <Route path="/" element={<EmployeeList />} />
+                            <Route path="/add" element={<AddEmployeePage />} />
+                            <Route path="/employees/:id" element={<EmployeeDetails />} />
+                            <Route path="/employees/:id/edit" element={<EditEmployeePage />} />
+                        </Routes>
+                    </main>
+                </div>
+            </Router>
+        </EmployeeProvider>
     );
 }
